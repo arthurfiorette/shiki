@@ -1,9 +1,11 @@
-import type { ShikiInternal, ThemeRegistrationResolved } from '@shikijs/types'
+import type { ShikiPrimitive, ThemeRegistrationResolved } from '@shikijs/types'
 import type * as monacoNs from 'monaco-editor-core'
 import type { MonacoLineToken } from './types'
 import { EncodedTokenMetadata, FontStyle, INITIAL } from '@shikijs/vscode-textmate'
 import { TokenizerState } from './tokenizer'
 import { normalizeColor } from './utils'
+
+const RE_FONT_STYLE_SPLIT = /[\s,]+/
 
 export interface MonacoTheme extends monacoNs.editor.IStandaloneThemeData { }
 
@@ -63,7 +65,7 @@ export function textmateThemeToMonacoTheme(theme: ThemeRegistrationResolved): Mo
 }
 
 export function shikiToMonaco(
-  highlighter: ShikiInternal<any, any>,
+  highlighter: ShikiPrimitive<any, any>,
   monaco: typeof monacoNs,
   options: ShikiToMonacoOptions = {},
 ): void {
@@ -207,7 +209,7 @@ function normalizeFontStyleString(fontStyle?: string): string {
 
   const styles = new Set(
     fontStyle
-      .split(/[\s,]+/)
+      .split(RE_FONT_STYLE_SPLIT)
       .map(style => style.trim().toLowerCase())
       .map(style => VALID_FONT_ALIASES[style] || style)
       .filter(Boolean),

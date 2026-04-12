@@ -1,42 +1,10 @@
 import type { HighlighterGeneric, Position } from '@shikijs/types'
+import { splitLines } from '@shikijs/primitive'
 
-/**
- * Split a string into lines, each line preserves the line ending.
- *
- * @param code - The code string to split into lines
- * @param preserveEnding - Whether to preserve line endings in the result
- * @returns Array of tuples containing [line content, offset index]
- *
- * @example
- * ```ts
- * splitLines('hello\nworld', false)
- * // => [['hello', 0], ['world', 6]]
- *
- * splitLines('hello\nworld', true)
- * // => [['hello\n', 0], ['world', 6]]
- * ```
- */
-export function splitLines(code: string, preserveEnding = false): [string, number][] {
-  // Handle empty string edge case
-  if (code.length === 0) {
-    return [['', 0]]
-  }
-
-  const parts = code.split(/(\r?\n)/g)
-  let index = 0
-  const lines: [string, number][] = []
-
-  for (let i = 0; i < parts.length; i += 2) {
-    const line = preserveEnding
-      ? parts[i] + (parts[i + 1] || '')
-      : parts[i]
-    lines.push([line, index])
-    index += parts[i].length
-    index += parts[i + 1]?.length || 0
-  }
-
-  return lines
-}
+const RE_LANG_ATTR = /:?lang=["']([^"']+)["']/g
+const RE_CODE_FENCE = /(?:```|~~~)([\w-]+)/g
+const RE_LATEX_BEGIN = /\\begin\{([\w-]+)\}/g
+const RE_SCRIPT_LANG = /<script\s+(?:type|lang)=["']([^"']+)["']/gi
 
 /**
  * Creates a converter between index and position in a code block.
@@ -54,7 +22,7 @@ export function createPositionConverter(code: string): {
     if (index === code.length) {
       return {
         line: lines.length - 1,
-        character: lines[lines.length - 1].length,
+        character: lines.at(-1)!.length,
       }
     }
 
@@ -114,7 +82,7 @@ export function guessEmbeddedLanguages(
   // For HTML code blocks like Vue SFC, support both single and double quotes
   // Matches: lang="js", lang='ts', :lang="typescript", etc.
   // Allow spaces around the language name
-  for (const match of code.matchAll(/:?lang=["']([^"']+)["']/g)) {
+  for (const match of code.matchAll(RE_LANG_ATTR)) {
     const lang = match[1].toLowerCase().trim()
     if (lang)
       langs.add(lang)
@@ -122,7 +90,7 @@ export function guessEmbeddedLanguages(
 
   // For markdown code blocks, support both ``` and ~~~ fences
   // Matches: ```typescript, ~~~javascript, etc.
-  for (const match of code.matchAll(/(?:```|~~~)([\w-]+)/g)) {
+  for (const match of code.matchAll(RE_CODE_FENCE)) {
     const lang = match[1].toLowerCase().trim()
     if (lang)
       langs.add(lang)
@@ -130,7 +98,7 @@ export function guessEmbeddedLanguages(
 
   // For LaTeX environments
   // Matches: \begin{equation}, \begin{align}, etc.
-  for (const match of code.matchAll(/\\begin\{([\w-]+)\}/g)) {
+  for (const match of code.matchAll(RE_LATEX_BEGIN)) {
     const lang = match[1].toLowerCase().trim()
     if (lang)
       langs.add(lang)
@@ -139,7 +107,7 @@ export function guessEmbeddedLanguages(
   // For script tags in HTML/Vue
   // Matches: <script type="text/javascript">, <script lang="ts">, etc.
   // Allow spaces around the language name
-  for (const match of code.matchAll(/<script\s+(?:type|lang)=["']([^"']+)["']/gi)) {
+  for (const match of code.matchAll(RE_SCRIPT_LANG)) {
     // Extract language from MIME types like 'text/javascript' or 'application/typescript'
     const fullType = match[1].toLowerCase().trim()
     const lang = fullType.includes('/') ? fullType.split('/').pop() : fullType
@@ -148,10 +116,10 @@ export function guessEmbeddedLanguages(
   }
 
   if (!highlighter)
-    return Array.from(langs)
+    return [...langs]
 
   // Only include known languages
   const bundle = highlighter.getBundledLanguages()
-  return Array.from(langs)
+  return [...langs]
     .filter(l => l && bundle[l])
 }

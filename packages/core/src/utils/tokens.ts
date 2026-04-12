@@ -1,7 +1,7 @@
 import type { CodeOptionsMultipleThemes, ThemedToken, ThemedTokenWithVariants, TokenStyles } from '@shikijs/types'
 import { ShikiError } from '@shikijs/types'
 import { FontStyle } from '@shikijs/vscode-textmate'
-import { COLOR_KEYS, DEFAULT_COLOR_LIGHT_DARK } from './_constants'
+import { COLOR_KEYS, DEFAULT_COLOR_LIGHT_DARK } from './constants'
 
 /**
  * Split a token into multiple tokens by given offsets.
@@ -48,9 +48,8 @@ export function splitTokens<
   tokens: T[][],
   breakpoints: number[] | Set<number>,
 ): T[][] {
-  const sorted = Array
-    .from(breakpoints instanceof Set ? breakpoints : new Set(breakpoints))
-    .sort((a, b) => a - b)
+  // eslint-disable-next-line e18e/prefer-array-to-sorted -- Set doesn't have toSorted()
+  const sorted = [...(breakpoints instanceof Set ? breakpoints : new Set(breakpoints))].sort((a, b) => a - b)
 
   if (!sorted.length)
     return tokens

@@ -6,9 +6,9 @@ import type {
 } from '@shikijs/types'
 import type { IGrammarConfiguration, IRawTheme } from '@shikijs/vscode-textmate'
 import type { Resolver } from './resolver'
+import { ShikiError } from '@shikijs/types'
 import { Registry as TextMateRegistry, Theme as TextMateTheme } from '@shikijs/vscode-textmate'
-import { ShikiError } from '../../../types/src/error'
-import { resolveLangAlias } from '../constructors/_alias'
+import { resolveLangAlias } from '../utils/alias'
 import { normalizeTheme } from './normalize-theme'
 
 export class Registry extends TextMateRegistry {
@@ -130,7 +130,7 @@ export class Registry extends TextMateRegistry {
     for (const lang of langs)
       this.resolveEmbeddedLanguages(lang)
 
-    const langsGraphArray = Array.from(this._langGraph.entries())
+    const langsGraphArray = [...this._langGraph.entries()]
 
     const missingLangs = langsGraphArray.filter(([_, lang]) => !lang)
     if (missingLangs.length) {
